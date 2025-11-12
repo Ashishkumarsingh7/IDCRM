@@ -1,4 +1,4 @@
-// backend-superadmin/routes/classRoutes.js
+
 const express = require('express');
 const router = express.Router();
 const { addClass, addDivision, getClasses, getDivisions } = require('../controllers/classController');

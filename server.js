@@ -15,9 +15,11 @@ const studentRoutes = require('./backend-school/routes/studentRoutes');
 const schoolClassRoutes = require('./backend-school/routes/classRoutes');
 const teacherRoutes = require('./backend-school/routes/teacherRoutes');
 const teacherAuthRoutes = require('./backend-teacher/routes/authRoutes');
+const teacherMyclassesRoutes=require('./backend-teacher/routes/teacherMyclassesRoutes')
 // ----------- App Setup -----------
 const app = express();
 app.use(bodyParser.json());
+
 
 // ----------- API Routes -----------
 app.use('/api/superadmin', superAdminRoutes);
@@ -32,6 +34,7 @@ app.use('/api/school', schoolRoutes);
 app.use('/api/school/class', schoolClassRoutes);
 app.use('/api/school/student', studentRoutes);
 app.use('/api/teacher/auth', teacherAuthRoutes);
+
 // ----------- Database Sync -----------
 sequelize
   .sync({ alter: true })

@@ -1,18 +1,22 @@
 const { QueryTypes } = require('sequelize');
 const sequelize = require('../../config/db');
+const bcrypt = require('bcryptjs'); // <-- add this for password hashing
 
 // ---------------- Add Teacher ----------------
 exports.addTeacher = async (req, res) => {
   try {
-    const { school_id, name, email, phone, subject, status } = req.body;
+    const { school_id, name, email, phone, subject, status, password } = req.body;
 
-    if (!school_id || !name) {
-      return res.status(400).json({ success: false, message: 'School ID and name are required' });
+    if (!school_id || !name || !password) {
+      return res.status(400).json({ success: false, message: 'School ID, name, and password are required' });
     }
 
+    // Hash the password before saving
+    const hashedPassword = await bcrypt.hash(password, 10);
+
     const query = `
-      INSERT INTO teachers (school_id, name, email, phone, subject, status, created_at, updated_at)
-      VALUES (:school_id, :name, :email, :phone, :subject, :status, NOW(), NOW())
+      INSERT INTO teachers (school_id, name, email, phone, subject, status, password, created_at, updated_at)
+      VALUES (:school_id, :name, :email, :phone, :subject, :status, :password, NOW(), NOW())
       RETURNING *;
     `;
 
@@ -22,7 +26,8 @@ exports.addTeacher = async (req, res) => {
       email: email || null,
       phone: phone || null,
       subject: subject || null,
-      status: status || 'Active'
+      status: status || 'Active',
+      password: hashedPassword
     };
 
     const [result] = await sequelize.query(query, { replacements, type: QueryTypes.INSERT });
@@ -45,7 +50,8 @@ exports.getTeachers = async (req, res) => {
     }
 
     const teachers = await sequelize.query(
-      `SELECT * FROM teachers WHERE school_id = :school_id ORDER BY id DESC`,
+      `SELECT id, school_id, name, email, phone, subject, status, created_at, updated_at 
+       FROM teachers WHERE school_id = :school_id ORDER BY id DESC`,
       { replacements: { school_id }, type: QueryTypes.SELECT }
     );
 

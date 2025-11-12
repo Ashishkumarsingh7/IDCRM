@@ -1,6 +1,6 @@
-// backend-superadmin/controllers/trustController.js
 const { QueryTypes } = require('sequelize');
 const sequelize = require('../../config/db');
+const bcrypt = require('bcryptjs'); // for password hashing
 
 // ---------------- Create Trust ----------------
 const createTrust = async (req, res) => {
@@ -11,22 +11,26 @@ const createTrust = async (req, res) => {
       superAdminName,
       email,
       phone,
-      address
+      address,
+      password
     } = req.body;
 
     // ---- Validation ----
-    if (!trustName || !registrationNumber || !superAdminName) {
+    if (!trustName || !registrationNumber || !superAdminName || !password) {
       return res.status(400).json({
         success: false,
-        message: 'Trust name, registration number, and super admin name are required'
+        message: 'Trust name, registration number, super admin name, and password are required'
       });
     }
+
+    // 🔐 Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     // ---- Insert Query ----
     const query = `
       INSERT INTO trusts 
-      (trust_name, registration_number, super_admin_name, email, phone, address, created_at, updated_at)
-      VALUES (:trust_name, :registration_number, :super_admin_name, :email, :phone, :address, NOW(), NOW())
+      (trust_name, registration_number, super_admin_name, email, phone, address, password, created_at, updated_at)
+      VALUES (:trust_name, :registration_number, :super_admin_name, :email, :phone, :address, :password, NOW(), NOW())
       RETURNING *;
     `;
 
@@ -34,9 +38,10 @@ const createTrust = async (req, res) => {
       trust_name: trustName,
       registration_number: registrationNumber,
       super_admin_name: superAdminName,
-      email,
-      phone,
-      address
+      email: email || null,
+      phone: phone || null,
+      address: address || null,
+      password: hashedPassword
     };
 
     const [result] = await sequelize.query(query, {
@@ -48,7 +53,7 @@ const createTrust = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: 'Trust created successfully',
+      message: '✅ Trust created successfully',
       data: insertedTrust
     });
 
@@ -62,7 +67,7 @@ const createTrust = async (req, res) => {
 const getAllTrusts = async (req, res) => {
   try {
     const query = `
-      SELECT *
+      SELECT id, trust_name, registration_number, super_admin_name, email, phone, address, created_at, updated_at
       FROM trusts
       ORDER BY id DESC;
     `;
@@ -90,7 +95,8 @@ const updateTrust = async (req, res) => {
       superAdminName,
       email,
       phone,
-      address
+      address,
+      password
     } = req.body;
 
     // ---- Check if Trust Exists ----
@@ -111,6 +117,7 @@ const updateTrust = async (req, res) => {
     if (email) fields.email = email;
     if (phone) fields.phone = phone;
     if (address) fields.address = address;
+    if (password) fields.password = await bcrypt.hash(password, 10); // 🔐 hash new password
 
     if (Object.keys(fields).length === 0) {
       return res.status(400).json({ success: false, message: 'No fields to update' });
@@ -138,7 +145,7 @@ const updateTrust = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'Trust updated successfully',
+      message: '✅ Trust updated successfully',
       data: updatedTrust
     });
 

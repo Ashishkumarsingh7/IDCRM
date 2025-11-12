@@ -1,23 +1,27 @@
 const { QueryTypes } = require('sequelize');
 const sequelize = require('../../config/db');
+const bcrypt = require('bcryptjs'); // For password hashing
 
 // ---------------- Trust Creates School ----------------
 const createSchoolByTrust = async (req, res) => {
   try {
     const trustId = req.user.id;
-    const { schoolName, schoolAdminName, email, phone, address, totalStudents } = req.body;
+    const { schoolName, schoolAdminName, email, phone, address, totalStudents, password } = req.body;
 
-    if (!schoolName || !schoolAdminName) {
+    if (!schoolName || !schoolAdminName || !password) {
       return res.status(400).json({
         success: false,
-        message: 'School name and school admin name are required'
+        message: 'School name, admin name, and password are required'
       });
     }
 
+    // 🔐 Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
     const query = `
       INSERT INTO schools
-      (trust_id, school_name, school_admin_name, email, phone, address, total_students, created_at, updated_at)
-      VALUES (:trust_id, :school_name, :school_admin_name, :email, :phone, :address, :total_students, NOW(), NOW())
+      (trust_id, school_name, school_admin_name, email, phone, address, total_students, password, created_at, updated_at)
+      VALUES (:trust_id, :school_name, :school_admin_name, :email, :phone, :address, :total_students, :password, NOW(), NOW())
       RETURNING *;
     `;
 
@@ -28,7 +32,8 @@ const createSchoolByTrust = async (req, res) => {
       email: email || null,
       phone: phone || null,
       address: address || null,
-      total_students: totalStudents || 0
+      total_students: totalStudents || 0,
+      password: hashedPassword
     };
 
     const [result] = await sequelize.query(query, { replacements, type: QueryTypes.INSERT });
@@ -50,7 +55,8 @@ const getSchoolsByTrust = async (req, res) => {
     const trustId = req.user.id;
 
     const schools = await sequelize.query(
-      `SELECT * FROM schools WHERE trust_id = :trust_id ORDER BY id DESC`,
+      `SELECT id, trust_id, school_name, school_admin_name, email, phone, address, total_students, created_at, updated_at 
+       FROM schools WHERE trust_id = :trust_id ORDER BY id DESC`,
       { replacements: { trust_id: trustId }, type: QueryTypes.SELECT }
     );
 

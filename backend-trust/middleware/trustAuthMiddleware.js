@@ -4,9 +4,18 @@ const { QueryTypes } = require('sequelize');
 
 const verifyTrustAuth = async (req, res, next) => {
   try {
-    const token = req.headers.authorization?.split(" ")[1];
-    if (!token) return res.status(401).json({ message: 'No token provided' });
+    // Get token from Authorization header (format: "Bearer <token>")
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ success: false, message: 'Access denied: No token provided' });
+    }
 
+    const token = authHeader.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({ success: false, message: 'Access denied: Invalid token format' });
+    }
+
+    // Verify JWT
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded;
 
@@ -16,14 +25,16 @@ const verifyTrustAuth = async (req, res, next) => {
       { replacements: { id: decoded.id }, type: QueryTypes.SELECT }
     );
 
-    if (!trust.length) {
-      return res.status(403).json({ message: 'Invalid or unauthorized trust account' });
+    if (!trust || trust.length === 0) {
+      return res.status(403).json({ success: false, message: 'Invalid or unauthorized trust account' });
     }
 
+    // Proceed to next middleware/controller
     next();
+
   } catch (err) {
-    console.error('Trust Auth Error:', err);
-    res.status(401).json({ message: 'Unauthorized' });
+    console.error('Trust Auth Error:', err.message);
+    res.status(401).json({ success: false, message: 'Unauthorized: Invalid or expired token' });
   }
 };
 

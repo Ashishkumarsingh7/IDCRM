@@ -1,9 +1,10 @@
+// ------------------- Imports -------------------
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 const sequelize = require('./config/db');
 
-// ----------- Import Routes -----------
+// ------------------- Import Routes -------------------
 const superAdminRoutes = require('./backend-superadmin/routes/superAdminRoutes');
 const trustRoutes = require('./backend-superadmin/routes/trustRoutes');
 const schoolRoutes = require('./backend-superadmin/routes/schoolRoutes');
@@ -18,15 +19,14 @@ const teacherAuthRoutes = require('./backend-teacher/routes/authRoutes');
 const teacherMyclassesRoutes = require('./backend-teacher/routes/teacherMyclassesRoutes');
 const teacherStudentFormsRoutes = require('./backend-teacher/routes/teacherStudentFormsRoutes');
 const teacherPendingApprovalRoutes = require("./backend-teacher/routes/teacherPendingApprovalRoutes");
-// Student Form Modules
 const studentFormsRoutes = require('./backend-teacher/routes/studentFormsRoutes');
 const studentFormShareRoutes = require('./backend-teacher/routes/studentFormShareRoutes');
 
-// ----------- App Setup -----------
+// ------------------- App Setup -------------------
 const app = express();
 app.use(express.json());
 
-// ----------- CORS Setup -----------
+// ------------------- CORS Setup -------------------
 app.use(
   cors({
     origin: [
@@ -38,7 +38,12 @@ app.use(
   })
 );
 
-// ----------- API Routes -----------
+// ------------------- Root Route -------------------
+app.get('/', (req, res) => {
+  res.json({ message: '✅ IDCRM API is running' });
+});
+
+// ------------------- API Routes -------------------
 
 // Super Admin
 app.use('/api/superadmin', superAdminRoutes);
@@ -55,20 +60,24 @@ app.use('/api/school/class', schoolClassRoutes);
 app.use('/api/school/teacher', teacherRoutes);
 app.use('/api/school/student', studentRoutes);
 app.use("/api/school", digitalFormsRoutes);
+
 // Teacher
 app.use('/api/teacher/auth', teacherAuthRoutes);
 app.use('/api/teacher/myclass', teacherMyclassesRoutes);
 app.use("/api/teacher", teacherPendingApprovalRoutes); 
-//  Student Form and Sharing
+app.use('/api/teacher/student-forms', teacherStudentFormsRoutes);
+
+// Student Form and Sharing
 app.use('/api/student-forms', studentFormsRoutes);
 app.use('/api/teacher', studentFormShareRoutes);
-app.use("/api/teacher/student-forms", teacherStudentFormsRoutes);
-// ----------- Database Sync -----------
+
+// ------------------- Database Sync -------------------
 sequelize
   .sync({ alter: true })
-  .then(() => console.log(' Database synchronized'))
-  .catch(err => console.error(' Sync failed:', err));
+  .then(() => console.log('✅ Database synchronized'))
+  .catch(err => console.error('❌ Sync failed:', err));
 
-// ----------- Server Start -----------
+// ------------------- Server Start -------------------
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(` Server running on port ${PORT}`));
+

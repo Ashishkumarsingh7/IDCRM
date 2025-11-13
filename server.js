@@ -7,19 +7,23 @@ const sequelize = require('./config/db');
 const superAdminRoutes = require('./backend-superadmin/routes/superAdminRoutes');
 const trustRoutes = require('./backend-superadmin/routes/trustRoutes');
 const schoolRoutes = require('./backend-superadmin/routes/schoolRoutes');
+const digitalFormsRoutes = require("./backend-school/routes/digitalFormsRoutes");
 const schoolAuthRoutes = require('./backend-school/routes/schoolAuthRoutes');
 const trustSchoolRoutes = require('./backend-trust/routes/trustSchoolRoutes');
-const authRoutes = require('./backend-trust/routes/authRoutes');
+const trustAuthRoutes = require('./backend-trust/routes/authRoutes');
 const studentRoutes = require('./backend-school/routes/studentRoutes');
-const schoolClassRoutes = require('./backend-school/routes/classRoutes'); // ye
+const schoolClassRoutes = require('./backend-school/routes/classRoutes');
 const teacherRoutes = require('./backend-school/routes/teacherRoutes');
 const teacherAuthRoutes = require('./backend-teacher/routes/authRoutes');
 const teacherMyclassesRoutes = require('./backend-teacher/routes/teacherMyclassesRoutes');
+const teacherStudentFormsRoutes = require('./backend-teacher/routes/teacherStudentFormsRoutes');
+const teacherPendingApprovalRoutes = require("./backend-teacher/routes/teacherPendingApprovalRoutes");
+// Student Form Modules
+const studentFormsRoutes = require('./backend-teacher/routes/studentFormsRoutes');
+const studentFormShareRoutes = require('./backend-teacher/routes/studentFormShareRoutes');
 
 // ----------- App Setup -----------
 const app = express();
-
-// Use JSON parser (body-parser not needed)
 app.use(express.json());
 
 // ----------- CORS Setup -----------
@@ -27,35 +31,44 @@ app.use(
   cors({
     origin: [
       "http://localhost:3000",
-      "https://admin.mydigiinfocard.com"
+      "https://admin.mydigiinfocard.com",
     ],
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
-    credentials: true, // allow cookies/auth headers
+    credentials: true,
   })
 );
 
 // ----------- API Routes -----------
+
+// Super Admin
 app.use('/api/superadmin', superAdminRoutes);
+
+// Trust
 app.use('/api/trust', trustRoutes);
-app.use('/api/school/class', schoolClassRoutes);
+app.use('/api/trust/auth', trustAuthRoutes);
 app.use('/api/trust/schools', trustSchoolRoutes);
-app.use('/api/trust/auth', authRoutes);
-app.use('/api/school/teacher', teacherRoutes);
 
-// School-level routes
-app.use('/api/school', schoolAuthRoutes);
+// School
+app.use('/api/school/auth', schoolAuthRoutes);
 app.use('/api/school', schoolRoutes);
+app.use('/api/school/class', schoolClassRoutes);
+app.use('/api/school/teacher', teacherRoutes);
 app.use('/api/school/student', studentRoutes);
-
-// Teacher routes
+app.use("/api/school", digitalFormsRoutes);
+// Teacher
 app.use('/api/teacher/auth', teacherAuthRoutes);
-
+app.use('/api/teacher/myclass', teacherMyclassesRoutes);
+app.use("/api/teacher", teacherPendingApprovalRoutes); 
+//  Student Form and Sharing
+app.use('/api/student-forms', studentFormsRoutes);
+app.use('/api/teacher', studentFormShareRoutes);
+app.use("/api/teacher/student-forms", teacherStudentFormsRoutes);
 // ----------- Database Sync -----------
 sequelize
   .sync({ alter: true })
-  .then(() => console.log('✅ Database synchronized'))
-  .catch(err => console.error('❌ Sync failed:', err));
+  .then(() => console.log(' Database synchronized'))
+  .catch(err => console.error(' Sync failed:', err));
 
 // ----------- Server Start -----------
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(` Server running on port ${PORT}`));

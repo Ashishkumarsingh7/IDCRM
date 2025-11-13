@@ -1,57 +1,67 @@
-import pool from '../../config/db.js'; // your PostgreSQL connection pool
+import sequelizePkg from 'sequelize';
+const { QueryTypes } = sequelizePkg;
+
+import sequelize from '../../config/db.js';
 
 export const getTeacherDashboard = async (req, res) => {
   try {
-    const teacherId = req.user.id; // from auth middleware
+    const teacherId = req.user?.id;
 
-    // 1️⃣ Get teacher details
-    const teacherResult = await pool.query(
-      `SELECT * FROM teachers WHERE id = $1`,
-      [teacherId]
+    if (!teacherId) {
+      return res.status(400).json({ success: false, message: "Teacher info missing in JWT" });
+    }
+
+    // 1️⃣ Fetch teacher details
+    const teachers = await sequelize.query(
+      'SELECT * FROM teachers WHERE id = :teacherId',
+      { replacements: { teacherId }, type: QueryTypes.SELECT }
     );
-    const teacher = teacherResult.rows[0];
 
+    const teacher = teachers[0];
     if (!teacher) {
-      return res.status(404).json({ success: false, message: "Teacher not found" });
+      return res.status(404).json({ success: false, message: 'Teacher not found' });
     }
 
-    // 2️⃣ Count total students in the teacher's school
-    const totalStudentsResult = await pool.query(
-      `SELECT COUNT(*) AS total_students FROM students WHERE school_id = $1`,
-      [teacher.school_id]
+    // 2️⃣ Count total students in school
+    const totalStudentsResult = await sequelize.query(
+      'SELECT COUNT(*) AS total_students FROM students WHERE school_id = :schoolId',
+      { replacements: { schoolId: teacher.school_id }, type: QueryTypes.SELECT }
     );
-    const totalStudents = totalStudentsResult.rows[0].total_students;
 
-    // 3️⃣ Find if teacher is assigned as class teacher
-    const classResult = await pool.query(
-      `SELECT * FROM classes WHERE class_teacher = $1 AND school_id = $2`,
-      [teacher.name, teacher.school_id]
+    const totalStudents = parseInt(totalStudentsResult[0].total_students, 10);
+
+    // 3️⃣ Find assigned class
+    const classResult = await sequelize.query(
+      'SELECT * FROM classes WHERE class_teacher = :teacherName AND school_id = :schoolId',
+      { replacements: { teacherName: teacher.name, schoolId: teacher.school_id }, type: QueryTypes.SELECT }
     );
-    const assignedClass = classResult.rows[0];
 
+    const assignedClass = classResult[0] || null;
+
+    // 4️⃣ Count students in assigned class
     let classStudentCount = 0;
-
-    // 4️⃣ If teacher has a class, count students in it
     if (assignedClass) {
-      const classStudentResult = await pool.query(
-        `SELECT COUNT(*) AS class_students FROM students WHERE class_id = $1`,
-        [assignedClass.id]
+      const classStudentResult = await sequelize.query(
+        'SELECT COUNT(*) AS class_students FROM students WHERE class_id = :classId',
+        { replacements: { classId: assignedClass.id }, type: QueryTypes.SELECT }
       );
-      classStudentCount = classStudentResult.rows[0].class_students;
+      classStudentCount = parseInt(classStudentResult[0].class_students, 10);
     }
 
-    res.json({
+    // 5️⃣ Return response
+    return res.json({
       success: true,
       data: {
         teacherName: teacher.name,
         totalStudents,
-        assignedClass: assignedClass ? assignedClass.class_name : null,
-        section: assignedClass ? assignedClass.section : null,
+        assignedClass: assignedClass?.class_name || null,
+        section: assignedClass?.section || null,
         classStudentCount,
       },
     });
+
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, message: "Server error" });
+    console.error('🔥 Error in getTeacherDashboard:', error.message);
+    return res.status(500).json({ success: false, message: 'Server error' });
   }
 };

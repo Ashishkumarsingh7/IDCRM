@@ -1,9 +1,9 @@
-import express from 'express';
-import { getTeacherDashboard } from '../controllers/teacherMyclassesController.js';
-import { verifyTeacher } from '../middleware/auth.js';
-
+const express = require('express');
 const router = express.Router();
+const { getTeacherDashboard } = require('../controllers/teacherMyclassesController');
+const { verifyTeacher } = require('../middleware/auth');
 
+// Teacher dashboard route
 router.get('/dashboard', verifyTeacher, getTeacherDashboard);
 
-export default router;
+module.exports = router;

@@ -20,7 +20,7 @@ const loginSchool = async (req, res) => {
     const schoolQuery = `
       SELECT id, school_name, email, password
       FROM schools
-      WHERE email = :email
+      WHERE LOWER(email) = LOWER(:email)
       LIMIT 1;
     `;
     const schools = await sequelize.query(schoolQuery, {
@@ -54,9 +54,14 @@ const loginSchool = async (req, res) => {
       });
     }
 
-    // --- Generate JWT Token ---
+    // --- Generate JWT Token with school_id ---
     const token = jwt.sign(
-      { id: school.id, email: school.email },
+      {
+        id: school.id,
+        email: school.email,
+        school_id: school.id, 
+        role: 'school'
+      },
       process.env.JWT_SECRET || 'defaultSecretKey',
       { expiresIn: '1d' }
     );

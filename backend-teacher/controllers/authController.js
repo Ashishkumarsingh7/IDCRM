@@ -26,8 +26,9 @@ const loginTeacher = async (req, res) => {
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
 
+    // ✅ Include name in JWT payload
     const token = jwt.sign(
-      { id: teacher.id, role: 'teacher' },
+      { id: teacher.id, name: teacher.name, role: 'teacher' },
       process.env.JWT_SECRET || 'secretkey',
       { expiresIn: '1d' }
     );

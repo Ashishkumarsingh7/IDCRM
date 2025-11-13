@@ -14,6 +14,6 @@ router.post('/division', verifySchoolAdmin, addDivision);
 router.get('/school/:school_id', verifySchoolAdmin, getClasses);
 
 // ---------------- Get Divisions of a Class ----------------
-router.get('/class/:class_id/divisions', verifySchoolAdmin, getDivisions);
+router.get('/class/:class_name/divisions', verifySchoolAdmin, getDivisions);
 
 module.exports = router;

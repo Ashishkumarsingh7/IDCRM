@@ -77,4 +77,17 @@ const loginSchool = async (req, res) => {
   }
 };
 
-module.exports = { loginSchool };
+// ---------------- School Logout ----------------
+const logoutSchool = async (req, res) => {
+  try {
+    res.status(200).json({
+      success: true,
+      message: '✅ School logged out successfully. Please clear your token from the client side.',
+    });
+  } catch (error) {
+    console.error('Logout Error:', error);
+    res.status(500).json({ success: false, message: 'Server error during logout' });
+  }
+};
+
+module.exports = { loginSchool, logoutSchool };

@@ -1,7 +1,7 @@
 const sequelize = require("../../config/db");
 const { QueryTypes } = require("sequelize");
 
-// ✅ Get pending/approved/rejected summary and waiting days
+// ✅ Get pending/approved/rejected summary + forms received + out of students
 const getPendingApprovalSummary = async (req, res) => {
   try {
     const teacherId = req.user?.id;
@@ -26,7 +26,17 @@ const getPendingApprovalSummary = async (req, res) => {
     );
 
     if (!classes.length)
-      return res.json({ success: true, data: { approved: 0, rejected: 0, pending: 0, waitingDays: [] } });
+      return res.json({
+        success: true,
+        data: {
+          approved: 0,
+          rejected: 0,
+          pending: 0,
+          totalFormsReceived: 0,
+          outOfStudents: 0,
+          waitingDays: []
+        }
+      });
 
     const classIds = classes.map(c => c.id);
 
@@ -39,12 +49,25 @@ const getPendingApprovalSummary = async (req, res) => {
       { replacements: { classIds }, type: QueryTypes.SELECT }
     );
 
-    // 4️⃣ Calculate counts
+    // 4️⃣ Count status
     const approvedCount = forms.filter(f => f.status === 'approved').length;
     const rejectedCount = forms.filter(f => f.status === 'rejected').length;
     const pendingCount = forms.filter(f => f.status === 'pending').length;
 
-    // 5️⃣ Calculate waiting days for pending forms
+    // 5️⃣ Total Forms Received
+    const totalFormsReceived = forms.length;  // 👍 All forms
+
+    // 6️⃣ Out of total students
+    const studentData = await sequelize.query(
+      `SELECT COUNT(*) AS total_students
+       FROM students
+       WHERE class_id IN (:classIds)`,
+      { replacements: { classIds }, type: QueryTypes.SELECT }
+    );
+
+    const outOfStudents = parseInt(studentData[0].total_students, 10);
+
+    // 7️⃣ Waiting days for pending forms
     const today = new Date();
     const waitingDays = forms
       .filter(f => f.status === 'pending')
@@ -59,6 +82,8 @@ const getPendingApprovalSummary = async (req, res) => {
         approved: approvedCount,
         rejected: rejectedCount,
         pending: pendingCount,
+        totalFormsReceived,
+        outOfStudents,
         waitingDays
       }
     });

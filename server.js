@@ -14,6 +14,7 @@ const trustSchoolRoutes = require('./backend-trust/routes/trustSchoolRoutes');
 const trustAuthRoutes = require('./backend-trust/routes/authRoutes');
 const studentRoutes = require('./backend-school/routes/studentRoutes');
 const schoolClassRoutes = require('./backend-school/routes/classRoutes');
+const studentIDRoutes = require("./backend-school/routes/studentIDRoutes");
 const teacherRoutes = require('./backend-school/routes/teacherRoutes');
 const teacherAuthRoutes = require('./backend-teacher/routes/authRoutes');
 const teacherMyclassesRoutes = require('./backend-teacher/routes/teacherMyclassesRoutes');
@@ -60,7 +61,7 @@ app.use('/api/school/class', schoolClassRoutes);
 app.use('/api/school/teacher', teacherRoutes);
 app.use('/api/school/student', studentRoutes);
 app.use("/api/school", digitalFormsRoutes);
-
+app.use("/api/school", studentIDRoutes);
 // Teacher
 app.use('/api/teacher/auth', teacherAuthRoutes);
 app.use('/api/teacher/myclass', teacherMyclassesRoutes);

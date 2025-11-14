@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { loginTrust } = require('../controllers/authController');
-
+const { loginTrust ,logoutTrust } = require('../controllers/authController');
 router.post('/login', loginTrust);
-
+router.post('/logout', logoutTrust);
 module.exports = router;

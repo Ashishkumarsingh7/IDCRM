@@ -43,12 +43,18 @@ const getSchoolFormsSummary = async (req, res) => {
       return res.send(csv);
     }
 
-    // 3️⃣ Default JSON Summary
+    // Default JSON Summary (UPDATED WITH class_teacher)
     const classes = await sequelize.query(
-      `SELECT id, class_name, section AS division
-       FROM classes
-       WHERE school_id = :schoolId
-       ORDER BY class_name, section`,
+      `SELECT 
+          c.id,
+          c.class_name,
+          d.division_name,
+          d.class_teacher
+       FROM classes c
+       LEFT JOIN divisions d 
+           ON d.class_name = c.class_name
+       WHERE c.school_id = :schoolId
+       ORDER BY c.class_name, d.division_name`,
       { replacements: { schoolId }, type: QueryTypes.SELECT }
     );
 
@@ -72,7 +78,8 @@ const getSchoolFormsSummary = async (req, res) => {
       const formData = forms.find(f => f.class_id === cls.id) || {};
       return {
         class_name: cls.class_name,
-        division: cls.division || "N/A",
+        division_name: cls.division_name || "N/A",
+        class_teacher: cls.class_teacher || "N/A",  // ✅ ADDED HERE
         total_forms: parseInt(formData.total_forms || 0, 10),
         approved: parseInt(formData.approved || 0, 10),
         rejected: parseInt(formData.rejected || 0, 10),

@@ -12,7 +12,7 @@ const loginSchool = async (req, res) => {
     if (!email || !password) {
       return res.status(400).json({
         success: false,
-        message: 'Email and password are required'
+        message: 'Email and password are required',
       });
     }
 
@@ -20,47 +20,47 @@ const loginSchool = async (req, res) => {
     const schoolQuery = `
       SELECT id, school_name, email, password
       FROM schools
-      WHERE email = :email
+      WHERE LOWER(email) = LOWER(:email)
       LIMIT 1;
     `;
     const schools = await sequelize.query(schoolQuery, {
       replacements: { email },
-      type: QueryTypes.SELECT
+      type: QueryTypes.SELECT,
     });
 
-    if (schools.length === 0) {
+    if (!schools.length) {
       return res.status(404).json({
         success: false,
-        message: 'School not found'
+        message: 'School not found',
       });
     }
 
     const school = schools[0];
 
-    // --- Check if Password Exists ---
-    if (!school.password) {
-      return res.status(400).json({
-        success: false,
-        message: 'Password not set for this school'
-      });
-    }
-
-    // --- Compare Password ---
-    const isMatch = await bcrypt.compare(password, school.password);
+    // --- Check Password ---
+    const isMatch = await bcrypt.compare(password, school.password || '');
     if (!isMatch) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid password'
+        message: 'Invalid email or password',
       });
     }
 
-    // --- Generate JWT Token ---
+    // --- Generate JWT Token with school_id ---
+    const tokenPayload = {
+      id: school.id,
+      email: school.email,
+      school_id: school.id, // Important for APIs
+      role: 'school',
+    };
+
     const token = jwt.sign(
-      { id: school.id, email: school.email },
+      tokenPayload,
       process.env.JWT_SECRET || 'defaultSecretKey',
       { expiresIn: '1d' }
     );
 
+    // --- Response ---
     res.status(200).json({
       success: true,
       message: 'Login successful',
@@ -68,14 +68,26 @@ const loginSchool = async (req, res) => {
       data: {
         id: school.id,
         name: school.school_name,
-        email: school.email
-      }
+        email: school.email,
+      },
     });
-
   } catch (err) {
     console.error('Login School Error:', err);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 };
 
-module.exports = { loginSchool };
+// ---------------- School Logout ----------------
+const logoutSchool = async (req, res) => {
+  try {
+    res.status(200).json({
+      success: true,
+      message: '✅ School logged out successfully. Please clear your token from the client side.',
+    });
+  } catch (error) {
+    console.error('Logout Error:', error);
+    res.status(500).json({ success: false, message: 'Server error during logout' });
+  }
+};
+
+module.exports = { loginSchool, logoutSchool };

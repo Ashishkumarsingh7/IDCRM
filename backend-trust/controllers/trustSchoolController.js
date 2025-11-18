@@ -5,7 +5,13 @@ const bcrypt = require('bcryptjs'); // For password hashing
 // ---------------- Trust Creates School ----------------
 const createSchoolByTrust = async (req, res) => {
   try {
-    const trustId = req.user.id;
+    const trustId = req.user?.id; // JWT middleware must set this
+    console.log('Trust ID from token:', trustId);
+
+    if (!trustId) {
+      return res.status(401).json({ success: false, message: 'Unauthorized: Trust ID missing' });
+    }
+
     const { schoolName, schoolAdminName, email, phone, address, totalStudents, password } = req.body;
 
     if (!schoolName || !schoolAdminName || !password) {
@@ -15,7 +21,6 @@ const createSchoolByTrust = async (req, res) => {
       });
     }
 
-    // 🔐 Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const query = `
@@ -45,29 +50,42 @@ const createSchoolByTrust = async (req, res) => {
     });
   } catch (err) {
     console.error('Create School by Trust Error:', err);
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({ success: false, message: 'Server error while creating school' });
   }
 };
 
 // ---------------- Get All Schools under Trust ----------------
 const getSchoolsByTrust = async (req, res) => {
   try {
-    const trustId = req.user.id;
+    const trustId = req.user?.id;
+    console.log('Trust ID from token:', trustId);
+
+    if (!trustId) {
+      return res.status(401).json({ success: false, message: 'Unauthorized: Trust ID missing' });
+    }
 
     const schools = await sequelize.query(
-      `SELECT id, trust_id, school_name, school_admin_name, email, phone, address, total_students, created_at, updated_at 
-       FROM schools WHERE trust_id = :trust_id ORDER BY id DESC`,
+      `
+      SELECT id, trust_id, school_name, school_admin_name, email, phone, address, total_students, created_at, updated_at
+      FROM schools
+      WHERE trust_id = :trust_id
+      ORDER BY id DESC
+      `,
       { replacements: { trust_id: trustId }, type: QueryTypes.SELECT }
     );
 
+    console.log('Schools fetched:', schools.length);
+
     res.status(200).json({
       success: true,
-      message: '✅ Schools fetched successfully',
+      message: schools.length
+        ? '✅ Schools fetched successfully'
+        : '⚠️ No schools found under this trust',
       data: schools
     });
   } catch (err) {
     console.error('Get Schools by Trust Error:', err);
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({ success: false, message: 'Server error while fetching schools' });
   }
 };
 

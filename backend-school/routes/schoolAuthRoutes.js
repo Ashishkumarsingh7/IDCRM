@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const { loginSchool } = require('../controllers/schoolAuthController');
+const { loginSchool, logoutSchool } = require('../controllers/schoolAuthController');
 
-// ---------------- School Login ----------------
 router.post('/login', loginSchool);
+router.post('/logout', logoutSchool);
 
 module.exports = router;

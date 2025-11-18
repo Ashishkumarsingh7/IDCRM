@@ -1,4 +1,3 @@
-const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const SuperAdmin = require('../models/superAdminModel');
 
@@ -7,15 +6,20 @@ exports.createSuperAdmin = async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
-    const existing = await SuperAdmin.findOne({ where: { email } });
-    if (existing) {
-      return res.status(400).json({ success: false, message: 'Super Admin already exists' });
+    if (!name || !email || !password) {
+      return res
+        .status(400)
+        .json({ success: false, message: 'All fields are required' });
     }
 
-    // Hash password before saving
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const existing = await SuperAdmin.findOne({ where: { email } });
+    if (existing) {
+      return res
+        .status(400)
+        .json({ success: false, message: 'Super Admin already exists' });
+    }
 
-    const newAdmin = await SuperAdmin.create({ name, email, password: hashedPassword });
+    const newAdmin = await SuperAdmin.create({ name, email, password });
 
     res.status(201).json({
       success: true,
@@ -27,7 +31,7 @@ exports.createSuperAdmin = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error(error);
+    console.error('Error creating Super Admin:', error);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 };
@@ -38,22 +42,29 @@ exports.loginSuperAdmin = async (req, res) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({ success: false, message: 'Email and password are required' });
+      return res
+        .status(400)
+        .json({ success: false, message: 'Email and password are required' });
     }
 
     const admin = await SuperAdmin.findOne({ where: { email } });
+
     if (!admin) {
-      return res.status(404).json({ success: false, message: 'Super Admin not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: 'Super Admin not found' });
     }
 
-    const isMatch = await bcrypt.compare(password, admin.password);
+    const isMatch = await admin.validPassword(password);
+
     if (!isMatch) {
-      return res.status(401).json({ success: false, message: 'Invalid credentials' });
+      return res
+        .status(401)
+        .json({ success: false, message: 'Invalid credentials' });
     }
 
-    // Generate JWT token
     const token = jwt.sign(
-      { id: admin.id, email: admin.email },
+      { id: admin.id, email: admin.email, role: 'superadmin' },
       process.env.JWT_SECRET || 'secretkey',
       { expiresIn: '1d' }
     );
@@ -64,7 +75,20 @@ exports.loginSuperAdmin = async (req, res) => {
       token,
     });
   } catch (error) {
-    console.error(error);
+    console.error('Error logging in Super Admin:', error);
     res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+// ---------------- Super Admin Logout ----------------
+exports.logoutSuperAdmin = async (req, res) => {
+  try {
+    res.status(200).json({
+      success: true,
+      message: '✅ Super Admin logged out successfully. Please clear your token from the client side.',
+    });
+  } catch (error) {
+    console.error('Super Admin Logout Error:', error);
+    res.status(500).json({ success: false, message: 'Server error during logout' });
   }
 };

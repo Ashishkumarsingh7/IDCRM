@@ -40,9 +40,17 @@ const loginTrust = async (req, res) => {
       return res.status(401).json({ success: false, message: 'Invalid email or password' });
     }
 
-    // ---- Generate JWT token ----
+    // ---- Generate JWT token including trust details ----
+    const tokenPayload = {
+      id: trust.id,
+      trust_id: trust.id,
+      trust_name: trust.trust_name,
+      email: trust.email,
+      role: 'trust'
+    };
+
     const token = jwt.sign(
-      { id: trust.id, role: 'Trust' },
+      tokenPayload,
       process.env.JWT_SECRET || 'secretkey',
       { expiresIn: '1d' }
     );
@@ -66,4 +74,17 @@ const loginTrust = async (req, res) => {
   }
 };
 
-module.exports = { loginTrust };
+// ---------------- Trust Logout ----------------
+const logoutTrust = async (req, res) => {
+  try {
+    res.status(200).json({
+      success: true,
+      message: '✅ Trust logged out successfully. Please clear your token from the client side.',
+    });
+  } catch (error) {
+    console.error('Trust Logout Error:', error);
+    res.status(500).json({ success: false, message: 'Server error during logout' });
+  }
+};
+
+module.exports = { loginTrust, logoutTrust };

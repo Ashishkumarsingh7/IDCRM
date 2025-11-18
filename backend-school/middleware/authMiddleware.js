@@ -1,8 +1,8 @@
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
-// Middleware to verify Super Admin token
-const verifySuperAdmin = (req, res, next) => {
+// Middleware to verify School Admin token
+const verifySchoolAdmin = (req, res, next) => {
   try {
     // Get token from Authorization header
     const authHeader = req.headers['authorization'];
@@ -18,10 +18,23 @@ const verifySuperAdmin = (req, res, next) => {
 
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    
+
+    // Check if school_id exists in token
+    if (!decoded.school_id) {
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized: School information not found in token.',
+      });
+    }
+
     // Attach user info to req
-    req.user = decoded; // decoded should contain id, email, role, etc.
-    
+    req.user = {
+      id: decoded.id,
+      email: decoded.email,
+      role: decoded.role,
+      school_id: decoded.school_id, // ensure school_id is available for controllers
+    };
+
     // Continue to next middleware/controller
     next();
   } catch (err) {
@@ -30,4 +43,4 @@ const verifySuperAdmin = (req, res, next) => {
   }
 };
 
-module.exports = { verifySuperAdmin };
+module.exports = { verifySchoolAdmin };
